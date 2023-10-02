@@ -1,6 +1,22 @@
-import '@/styles/globals.css'
-import type { AppProps } from 'next/app'
+import '@/styles/globals.css';
+import '@radix-ui/themes/styles.css';
+import type { AppProps, AppType } from 'next/app';
+import { trpc } from '@/utils/trpc';
+import { Theme } from '@radix-ui/themes';
+import RootLayout from '@/layouts/RootLayout';
+import store from '@/store';
+import { Provider } from 'react-redux';
 
-export default function App({ Component, pageProps }: AppProps) {
-  return <Component {...pageProps} />
-}
+const App: AppType = ({ Component, pageProps }: AppProps) => {
+  return (
+    <Theme accentColor="blue" radius="full">
+      <Provider store={store}>
+        <RootLayout>
+          <Component {...pageProps} />
+        </RootLayout>
+      </Provider>
+    </Theme>
+  );
+};
+
+export default trpc.withTRPC(App);
