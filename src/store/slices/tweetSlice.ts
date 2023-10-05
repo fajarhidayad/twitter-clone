@@ -4,9 +4,7 @@ import type { PayloadAction } from '@reduxjs/toolkit';
 import { inferRouterOutputs } from '@trpc/server';
 import { AppRouter } from '@/server/routers/_app';
 
-type RouterOutput = inferRouterOutputs<AppRouter>;
-
-export type Tweet = RouterOutput['tweet']['getAll'][0];
+export type Tweet = inferRouterOutputs<AppRouter>['tweet']['getAll'][0];
 
 type TweetState = {
   tweets: Tweet[];

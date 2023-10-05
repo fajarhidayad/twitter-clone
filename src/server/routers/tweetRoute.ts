@@ -6,16 +6,25 @@ export const tweetRouter = router({
   getAll: procedure.query(async () => {
     const tweets = await prisma.tweet.findMany({
       orderBy: { createdAt: 'desc' },
+      include: {
+        author: {
+          select: {
+            name: true,
+            image: true,
+          },
+        },
+      },
     });
 
     return tweets;
   }),
   create: procedure
-    .input(z.object({ text: z.string() }))
+    .input(z.object({ text: z.string(), authorId: z.string() }))
     .mutation(async ({ input }) => {
       const tweet = await prisma.tweet.create({
         data: {
           text: input.text,
+          authorId: input.authorId,
         },
       });
 

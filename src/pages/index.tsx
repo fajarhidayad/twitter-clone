@@ -1,8 +1,7 @@
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { addTweet, getTweets, setTweets } from '@/store/slices/tweetSlice';
+import { Tweet, getTweets, setTweets } from '@/store/slices/tweetSlice';
 import { formatDate } from '@/utils/formatDate';
 import { trpc } from '@/utils/trpc';
-import { Tweet } from '@prisma/client';
 import {
   Avatar,
   Button,
@@ -12,6 +11,8 @@ import {
   Text,
   TextArea,
 } from '@radix-ui/themes';
+import { Session } from 'next-auth';
+import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
 
@@ -19,6 +20,7 @@ type Tab = 'for-you' | 'following';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('for-you');
+  const { data: session } = useSession();
 
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);
@@ -29,8 +31,17 @@ export default function Home() {
       <Head>
         <title>Tweety</title>
       </Head>
-      <Nav activeTab={activeTab} handleTabChange={handleTabChange} />
-      <TweetInput />
+      <Nav
+        activeTab={activeTab}
+        handleTabChange={handleTabChange}
+        session={session}
+      />
+      {session && (
+        <TweetInput
+          authorId={session.user?.id}
+          image={session.user?.image ?? ''}
+        />
+      )}
       <section>
         {activeTab === 'for-you' && <TabContent />}
         {activeTab === 'following' && <TabContent />}
@@ -42,61 +53,70 @@ export default function Home() {
 const Nav = (props: {
   handleTabChange: (input: Tab) => void;
   activeTab: Tab;
+  session: Session | null;
 }) => {
   return (
     <nav className="px-5 py-3 border-b sticky top-0 backdrop-blur z-50">
       <Heading mb={'5'}>Home</Heading>
-      <Flex direction={'row'} justify={'between'}>
-        <Button
-          variant="ghost"
-          radius="none"
-          color="gray"
-          className="flex-1 group"
-          onClick={() => props.handleTabChange('for-you')}
-        >
-          <Text
-            className={
-              `text-slate-800 border-b-2 group-hover:border-b-blue-500 py-2 ` +
-              (props.activeTab === 'for-you'
-                ? 'border-b-blue-500'
-                : 'border-b-transparent')
-            }
+      {props.session && (
+        <Flex direction={'row'} justify={'between'}>
+          <Button
+            variant="ghost"
+            radius="none"
+            color="gray"
+            className="flex-1 group"
+            onClick={() => props.handleTabChange('for-you')}
           >
-            For You
-          </Text>
-        </Button>
-        <Separator size={'2'} orientation="vertical" mx={'2'} />
-        <Button
-          variant={'ghost'}
-          radius="none"
-          color="gray"
-          className="flex-1 group"
-          onClick={() => props.handleTabChange('following')}
-        >
-          <Text
-            className={
-              `text-slate-800 border-b-2 group-hover:border-b-blue-500 py-2 ` +
-              (props.activeTab === 'following'
-                ? 'border-b-blue-500'
-                : 'border-b-transparent')
-            }
+            <Text
+              className={
+                `text-slate-800 border-b-2 group-hover:border-b-blue-500 py-2 ` +
+                (props.activeTab === 'for-you'
+                  ? 'border-b-blue-500'
+                  : 'border-b-transparent')
+              }
+            >
+              For You
+            </Text>
+          </Button>
+          <Separator size={'2'} orientation="vertical" mx={'2'} />
+          <Button
+            variant={'ghost'}
+            radius="none"
+            color="gray"
+            className="flex-1 group"
+            onClick={() => props.handleTabChange('following')}
           >
-            Following
-          </Text>
-        </Button>
-      </Flex>
+            <Text
+              className={
+                `text-slate-800 border-b-2 group-hover:border-b-blue-500 py-2 ` +
+                (props.activeTab === 'following'
+                  ? 'border-b-blue-500'
+                  : 'border-b-transparent')
+              }
+            >
+              Following
+            </Text>
+          </Button>
+        </Flex>
+      )}
     </nav>
   );
 };
 
-const TweetInput = () => {
+const TweetInput = ({
+  authorId,
+  image,
+}: {
+  authorId: string;
+  image: string;
+}) => {
   const [text, setText] = useState('');
-  const dispatch = useAppDispatch();
+  const utils = trpc.useContext();
 
   const createTweet = trpc.tweet.create.useMutation({
     async onSuccess(tweet) {
       setText('');
-      dispatch(addTweet(tweet));
+      utils.tweet.getAll.invalidate();
     },
   });
 
@@ -105,7 +125,7 @@ const TweetInput = () => {
     if (text.length === 0) return;
 
     try {
-      await createTweet.mutateAsync({ text });
+      await createTweet.mutateAsync({ text, authorId });
     } catch (error) {
       console.error({ error }, 'Failed to add tweet');
     }
@@ -115,7 +135,7 @@ const TweetInput = () => {
     <div className="border-b px-5 py-3">
       <form onSubmit={handleSubmit}>
         <Flex gap={'3'} mb={'2'}>
-          <Avatar fallback="U" radius="full" variant="solid" color="gray" />
+          <Avatar fallback="U" radius="full" src={image} />
           <TextArea
             size={'3'}
             placeholder="What's on your mind?"
@@ -158,12 +178,13 @@ const TabContent = () => {
 };
 
 const Tweet = ({ tweet }: { tweet: Tweet }) => {
+  tweet;
   return (
     <li key={tweet.id} className="p-3 border-b flex">
-      <Avatar fallback="U" variant="solid" color="gray" />
+      <Avatar fallback="U" src={tweet.author.image ?? ''} />
       <div className="ml-3">
         <div className="flex items-center gap-1">
-          <Text weight={'bold'}>User</Text>
+          <Text weight={'bold'}>{tweet.author.name}</Text>
           <Text size={'2'} color="gray">
             @user
           </Text>
