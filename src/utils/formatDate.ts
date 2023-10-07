@@ -1,19 +1,22 @@
-import { formatDistanceToNow, isBefore, subDays } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 
-export const formatDate = (date: Date) => {
-  if (isBefore(date, subDays(new Date(), 30))) {
-    return date.toLocaleDateString();
+export function formatDate(date: Date): string {
+  const now = new Date();
+  const diffInMinutes = Math.round(
+    (now.getTime() - date.getTime()) / (1000 * 60)
+  );
+  if (diffInMinutes < 1) {
+    return 'just now';
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes}m`;
+  } else if (diffInMinutes < 24 * 60) {
+    return `${Math.round(diffInMinutes / 60)}h`;
   } else {
-    const distance = formatDistanceToNow(date, { addSuffix: true });
-
-    if (distance.includes('seconds')) {
-      return distance.replace(' seconds', 's');
-    } else if (distance.includes(' minutes')) {
-      return distance.replace(' minutes', 'm');
-    } else if (distance.includes(' hours')) {
-      return distance.replace(' hours', 'h');
-    } else {
-      return distance;
-    }
+    return format(date, 'd MMM');
   }
-};
+}
+
+export function formatDateDetails(date: Date) {
+  const formattedDate = format(date, 'h:mm a · d MMM yyy');
+  return formattedDate;
+}

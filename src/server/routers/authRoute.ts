@@ -31,6 +31,30 @@ export const authRouter = router({
 
       return user;
     }),
+  getUserByUsername: procedure
+    .input(z.object({ username: z.string(), userId: z.string().nullish() }))
+    .query(async ({ input, ctx }) => {
+      const user = await ctx.prisma.user.findUnique({
+        where: { username: input.username },
+        include: {
+          _count: {
+            select: { followers: true, following: true },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+      }
+
+      const isFollowing = input.userId
+        ? await ctx.prisma.follow.findFirst({
+            where: { followerId: user.id, followingId: input.userId },
+          })
+        : false;
+
+      return { user, isFollowing };
+    }),
   signUp: procedure
     .input(
       z.object({
@@ -148,5 +172,57 @@ export const authRouter = router({
         status: 'success',
         data: updatedUser,
       };
+    }),
+  followUser: procedure
+    .input(
+      z.object({
+        userId: z.string(),
+        username: z.string(),
+        type: z.enum(['follow', 'unfollow']),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const author = await ctx.prisma.user.findUnique({
+        where: { username: input.username },
+      });
+
+      if (!author)
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
+
+      if (input.type === 'unfollow') {
+        const unfollow = await ctx.prisma.follow.delete({
+          where: {
+            followerId_followingId: {
+              followerId: author.id,
+              followingId: input.userId,
+            },
+          },
+        });
+        return {
+          status: 'success',
+          data: unfollow,
+        };
+      } else {
+        const check = await ctx.prisma.follow.findFirst({
+          where: { followerId: author.id, followingId: input.userId },
+        });
+        if (check)
+          return {
+            status: 'failed',
+            message: 'You already follow this user',
+          };
+
+        const follow = await ctx.prisma.follow.create({
+          data: {
+            followerId: author.id,
+            followingId: input.userId,
+          },
+        });
+
+        return {
+          status: 'success',
+          data: follow,
+        };
+      }
     }),
 });

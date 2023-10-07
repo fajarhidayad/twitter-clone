@@ -1,5 +1,11 @@
+import Reaction from '@/components/Reaction';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import { Tweet, getTweets, setTweets } from '@/store/slices/tweetSlice';
+import {
+  Tweet,
+  getTweets,
+  setTweet,
+  setTweets,
+} from '@/store/slices/tweetSlice';
 import { formatDate } from '@/utils/formatDate';
 import { trpc } from '@/utils/trpc';
 import {
@@ -14,6 +20,7 @@ import {
 import { Session } from 'next-auth';
 import { useSession } from 'next-auth/react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 type Tab = 'for-you' | 'following';
@@ -43,8 +50,8 @@ export default function Home() {
         />
       )}
       <section>
-        {activeTab === 'for-you' && <TabContent />}
-        {activeTab === 'following' && <TabContent />}
+        {activeTab === 'for-you' && <ForYouTabContent />}
+        {activeTab === 'following' && <FollowingTabContent />}
       </section>
     </>
   );
@@ -146,7 +153,7 @@ const TweetInput = ({
           />
         </Flex>
         <Flex justify={'end'}>
-          <Button type="submit" size={'3'}>
+          <Button type="submit" size={'3'} disabled={!text}>
             Post
           </Button>
         </Flex>
@@ -155,7 +162,7 @@ const TweetInput = ({
   );
 };
 
-const TabContent = () => {
+const ForYouTabContent = () => {
   const tweets = useAppSelector(getTweets);
   const tweetQuery = trpc.tweet.getAll.useQuery();
   const dispatch = useAppDispatch();
@@ -170,31 +177,74 @@ const TabContent = () => {
     <div className="py-3">
       <ul>
         {tweets.map((tweet) => (
-          <Tweet key={tweet.id} tweet={tweet} />
+          <Tweet
+            key={tweet.id}
+            tweet={tweet}
+            dispatch={() => dispatch(setTweet(tweet))}
+          />
         ))}
       </ul>
     </div>
   );
 };
 
-const Tweet = ({ tweet }: { tweet: Tweet }) => {
-  tweet;
+const FollowingTabContent = () => {
   return (
-    <li key={tweet.id} className="p-3 border-b flex">
-      <Avatar fallback="U" src={tweet.author.image ?? ''} />
-      <div className="ml-3">
-        <div className="flex items-center gap-1">
-          <Text weight={'bold'}>{tweet.author.name}</Text>
-          <Text size={'2'} color="gray">
-            @user
-          </Text>
-          <Text className="text-gray-500">·</Text>
-          <Text className="text-gray-500 ml-2" size={'2'}>
-            {formatDate(tweet.createdAt)}
-          </Text>
+    <div className="py-3">
+      <ul>
+        <li className="px-3">No content yet</li>
+      </ul>
+    </div>
+  );
+};
+
+const Tweet = ({ tweet, dispatch }: { tweet: Tweet; dispatch: () => void }) => {
+  const router = useRouter();
+
+  const setLocalTweet = () => {
+    router.push(`/${tweet.author.username}/status/${tweet.id}`);
+    dispatch();
+  };
+
+  const handleClickProfile = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    router.push(`/${tweet.author.username}`);
+  };
+
+  return (
+    <li
+      key={tweet.id}
+      onClick={setLocalTweet}
+      className="px-3 pt-3 border-b hover:bg-gray-100 cursor-pointer"
+    >
+      <Flex>
+        <Avatar
+          fallback="U"
+          className="z-30"
+          src={tweet.author.image ?? ''}
+          onClick={handleClickProfile}
+        />
+        <div className="ml-3">
+          <div className="flex items-center gap-1">
+            <Text
+              weight={'bold'}
+              className="hover:underline"
+              onClick={handleClickProfile}
+            >
+              {tweet.author.name}
+            </Text>
+            <Text size={'2'} color="gray">
+              @{tweet.author.username}
+            </Text>
+            <Text className="text-gray-500">·</Text>
+            <Text className="text-gray-500 ml-2" size={'2'}>
+              {formatDate(tweet.createdAt)}
+            </Text>
+          </div>
+          <Text>{tweet.text}</Text>
         </div>
-        <Text>{tweet.text}</Text>
-      </div>
+      </Flex>
+      <Reaction />
     </li>
   );
 };

@@ -53,6 +53,9 @@ model User {
   password UserPassword?
   tweets   Tweet[]
   likes    Like[]
+
+  followers Follow[] @relation("Followers")
+  following Follow[] @relation("Following")
 }
 
 model UserPassword {
@@ -96,4 +99,14 @@ model Like {
   author    User     @relation(fields: [authorId], references: [id])
   tweetId   Int
   tweet     Tweet    @relation(fields: [tweetId], references: [id])
+}
+
+model Follow {
+  id          String @id @default(cuid())
+  follower    User   @relation("Followers", fields: [followerId], references: [id])
+  followerId  String
+  following   User   @relation("Following", fields: [followingId], references: [id])
+  followingId String
+
+  @@unique([followerId, followingId])
 }

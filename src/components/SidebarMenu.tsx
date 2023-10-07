@@ -41,7 +41,7 @@ export default function SidebarMenu() {
           </Link>
           {status === 'authenticated' && (
             <Link
-              href={'/profile'}
+              href={`/${session?.user?.username}`}
               className="px-4 py-2 rounded-full hover:bg-gray-100"
             >
               <Text>Profile</Text>
@@ -68,7 +68,7 @@ export default function SidebarMenu() {
                   {session.user?.name}
                 </Text>
                 <Text size={'2'} color="gray">
-                  @username
+                  @{session.user.username}
                 </Text>
               </Flex>
             </Flex>

@@ -15,6 +15,7 @@ export default function SettingsPage() {
   const updateProfile = trpc.auth.updateProfile.useMutation({
     onSuccess: (res) => {
       update({ ...session, user: { ...res.data } });
+      router.push(`/${res.data.username}`);
     },
   });
   const {

@@ -11,6 +11,13 @@ export const tweetRouter = router({
           select: {
             name: true,
             image: true,
+            username: true,
+          },
+        },
+        _count: {
+          select: {
+            likes: true,
+            replies: true,
           },
         },
       },
@@ -35,6 +42,15 @@ export const tweetRouter = router({
     .query(async ({ input }) => {
       const tweet = await prisma.tweet.findUnique({
         where: { id: input.id },
+        include: {
+          author: {
+            select: {
+              name: true,
+              image: true,
+              username: true,
+            },
+          },
+        },
       });
 
       return tweet;

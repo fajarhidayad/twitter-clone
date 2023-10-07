@@ -4,10 +4,10 @@ import { useRouter } from 'next/router';
 
 interface NavProfileProps {
   title: string;
-  type: 'settings' | 'profile';
+  type?: 'default' | 'profile';
 }
 
-const NavProfile = ({ title, type }: NavProfileProps) => {
+const NavProfile = ({ title, type = 'default' }: NavProfileProps) => {
   const router = useRouter();
   return (
     <nav className="px-5 py-3 sticky top-0 backdrop-blur z-50 flex items-center gap-6">
