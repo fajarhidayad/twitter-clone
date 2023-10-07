@@ -55,7 +55,7 @@ export default function SettingsPage() {
         <title>Settings | Tweety</title>
       </Head>
 
-      <NavProfile title={'Settings'} type="settings" />
+      <NavProfile title={'Settings'} type="default" />
       <section className="px-5 mt-3">
         <Heading mb={'3'}>Update profile</Heading>
         <form className="flex flex-col gap-3" onSubmit={handleSubmit(submit)}>

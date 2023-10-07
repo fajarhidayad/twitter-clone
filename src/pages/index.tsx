@@ -1,11 +1,6 @@
+import Loading from '@/components/Loading';
 import Reaction from '@/components/Reaction';
-import { useAppDispatch, useAppSelector } from '@/store/hooks';
-import {
-  Tweet,
-  getTweets,
-  setTweet,
-  setTweets,
-} from '@/store/slices/tweetSlice';
+import { AppRouter } from '@/server/routers/_app';
 import { formatDate } from '@/utils/formatDate';
 import { trpc } from '@/utils/trpc';
 import {
@@ -17,13 +12,15 @@ import {
   Text,
   TextArea,
 } from '@radix-ui/themes';
+import { inferRouterOutputs } from '@trpc/server';
 import { Session } from 'next-auth';
 import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 type Tab = 'for-you' | 'following';
+type Tweet = inferRouterOutputs<AppRouter>['tweet']['getAll'][0];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('for-you');
@@ -163,25 +160,15 @@ const TweetInput = ({
 };
 
 const ForYouTabContent = () => {
-  const tweets = useAppSelector(getTweets);
-  const tweetQuery = trpc.tweet.getAll.useQuery();
-  const dispatch = useAppDispatch();
+  const tweets = trpc.tweet.getAll.useQuery();
 
-  useEffect(() => {
-    if (tweetQuery.data) {
-      dispatch(setTweets(tweetQuery.data));
-    }
-  }, [tweetQuery.data, dispatch]);
+  if (!tweets.data) return <Loading />;
 
   return (
     <div className="py-3">
       <ul>
-        {tweets.map((tweet) => (
-          <Tweet
-            key={tweet.id}
-            tweet={tweet}
-            dispatch={() => dispatch(setTweet(tweet))}
-          />
+        {tweets.data.map((tweet) => (
+          <Tweet key={tweet.id} tweet={tweet} />
         ))}
       </ul>
     </div>
@@ -198,12 +185,11 @@ const FollowingTabContent = () => {
   );
 };
 
-const Tweet = ({ tweet, dispatch }: { tweet: Tweet; dispatch: () => void }) => {
+const Tweet = ({ tweet }: { tweet: Tweet }) => {
   const router = useRouter();
 
   const setLocalTweet = () => {
     router.push(`/${tweet.author.username}/status/${tweet.id}`);
-    dispatch();
   };
 
   const handleClickProfile = (e: React.MouseEvent) => {
