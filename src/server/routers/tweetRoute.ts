@@ -1,5 +1,5 @@
 import { prisma } from '../prisma';
-import { router, procedure } from '../trpc';
+import { router, procedure, isAuthed } from '../trpc';
 import { z } from 'zod';
 
 export const tweetRouter = router({
@@ -26,12 +26,14 @@ export const tweetRouter = router({
     return tweets;
   }),
   create: procedure
-    .input(z.object({ text: z.string(), authorId: z.string() }))
-    .mutation(async ({ input }) => {
+    .use(isAuthed)
+    .input(z.object({ text: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const authorId = ctx.session.user.id;
       const tweet = await prisma.tweet.create({
         data: {
           text: input.text,
-          authorId: input.authorId,
+          authorId: authorId,
         },
       });
 
@@ -55,4 +57,9 @@ export const tweetRouter = router({
 
       return tweet;
     }),
+  // like: procedure
+  //   .input(z.object({ tweetId: z.number() }))
+  //   .mutation(async ({ input, ctx }) => {
+
+  //   }),
 });

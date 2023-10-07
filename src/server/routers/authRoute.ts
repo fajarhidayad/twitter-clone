@@ -1,4 +1,4 @@
-import { procedure, router } from '@/server/trpc';
+import { isAuthed, procedure, router } from '@/server/trpc';
 import { TRPCError } from '@trpc/server';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
@@ -32,7 +32,7 @@ export const authRouter = router({
       return user;
     }),
   getUserByUsername: procedure
-    .input(z.object({ username: z.string(), userId: z.string().nullish() }))
+    .input(z.object({ username: z.string() }))
     .query(async ({ input, ctx }) => {
       const user = await ctx.prisma.user.findUnique({
         where: { username: input.username },
@@ -47,9 +47,9 @@ export const authRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'User not found' });
       }
 
-      const isFollowing = input.userId
+      const isFollowing = ctx.session
         ? await ctx.prisma.follow.findFirst({
-            where: { followerId: user.id, followingId: input.userId },
+            where: { followerId: user.id, followingId: ctx.session.user.id },
           })
         : false;
 
@@ -142,10 +142,12 @@ export const authRouter = router({
       }
     }),
   updateProfile: procedure
-    .input(z.object({ profile: profileSchema, userId: z.string() }))
+    .use(isAuthed)
+    .input(z.object({ profile: profileSchema }))
     .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.user.id;
       const user = await ctx.prisma.user.findUnique({
-        where: { id: input.userId },
+        where: { id: userId },
       });
 
       if (!user)
@@ -155,14 +157,14 @@ export const authRouter = router({
         where: { username: input.profile.username },
       });
 
-      if (checkUsername && checkUsername.id !== input.userId)
+      if (checkUsername && checkUsername.id !== userId)
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Username already exists',
         });
 
       const updatedUser = await ctx.prisma.user.update({
-        where: { id: input.userId },
+        where: { id: userId },
         data: {
           ...input.profile,
         },
@@ -174,14 +176,15 @@ export const authRouter = router({
       };
     }),
   followUser: procedure
+    .use(isAuthed)
     .input(
       z.object({
-        userId: z.string(),
         username: z.string(),
         type: z.enum(['follow', 'unfollow']),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
       const author = await ctx.prisma.user.findUnique({
         where: { username: input.username },
       });
@@ -194,7 +197,7 @@ export const authRouter = router({
           where: {
             followerId_followingId: {
               followerId: author.id,
-              followingId: input.userId,
+              followingId: userId,
             },
           },
         });
@@ -204,7 +207,7 @@ export const authRouter = router({
         };
       } else {
         const check = await ctx.prisma.follow.findFirst({
-          where: { followerId: author.id, followingId: input.userId },
+          where: { followerId: author.id, followingId: userId },
         });
         if (check)
           return {
@@ -215,7 +218,7 @@ export const authRouter = router({
         const follow = await ctx.prisma.follow.create({
           data: {
             followerId: author.id,
-            followingId: input.userId,
+            followingId: userId,
           },
         });
 

@@ -7,6 +7,7 @@ import { AppRouter } from '@/server/routers/_app';
 import superjson from 'superjson';
 import { User } from '@prisma/client';
 import { prisma } from '@/server/prisma';
+import { NextAuthOptions } from 'next-auth';
 
 const client = createTRPCProxyClient<AppRouter>({
   transformer: superjson,
@@ -34,7 +35,7 @@ declare module 'next-auth/jwt' {
   }
 }
 
-export default NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -99,4 +100,6 @@ export default NextAuth({
     strategy: 'jwt',
   },
   adapter: PrismaAdapter(prisma),
-});
+};
+
+export default NextAuth(authOptions);

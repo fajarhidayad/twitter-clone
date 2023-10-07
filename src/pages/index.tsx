@@ -230,7 +230,7 @@ const Tweet = ({ tweet }: { tweet: Tweet }) => {
           <Text>{tweet.text}</Text>
         </div>
       </Flex>
-      <Reaction />
+      <Reaction likes={tweet._count.likes} replies={tweet._count.replies} />
     </li>
   );
 };

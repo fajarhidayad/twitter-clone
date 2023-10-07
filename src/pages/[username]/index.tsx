@@ -13,11 +13,9 @@ type User = inferRouterOutputs<AppRouter>['auth']['getUserByUsername'];
 export default function ProfilePage() {
   const router = useRouter();
   const username = router.query.username as string;
-  const { data: session } = useSession();
 
   const user = trpc.auth.getUserByUsername.useQuery({
     username,
-    userId: session?.user.id,
   });
 
   return (
@@ -65,16 +63,13 @@ const ProfileSection = ({
               />
             )}
           </div>
-          {user?.username === session?.user.username ? (
+          {user?.username === session?.user.username && (
             <Button className="ml-auto" onClick={redirectSetting}>
               Edit profile
             </Button>
-          ) : (
-            <FollowSection
-              sessionId={session?.user.id ?? ''}
-              username={username}
-              isFollowing={isFollowing}
-            />
+          )}
+          {session && user?.username !== session?.user.username && (
+            <FollowSection username={username} isFollowing={isFollowing} />
           )}
         </Flex>
         <div className="my-3">
@@ -104,11 +99,9 @@ const ProfileSection = ({
 };
 
 const FollowSection = ({
-  sessionId,
   username,
   isFollowing,
 }: {
-  sessionId: string;
   username: string;
   isFollowing?: User['isFollowing'];
 }) => {
@@ -122,7 +115,6 @@ const FollowSection = ({
   const handleFollow = (type: 'follow' | 'unfollow') => {
     followMut.mutateAsync({
       type,
-      userId: sessionId,
       username,
     });
   };
