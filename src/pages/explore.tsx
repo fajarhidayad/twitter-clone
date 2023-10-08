@@ -23,7 +23,7 @@ export default function explore() {
 
         <ul className="flex flex-col">
           <li className="hover:bg-gray-100 cursor-pointer px-5 py-3">
-            <Text weight={'medium'}>Reactm</Text>
+            <Text weight={'medium'}>React JS</Text>
           </li>
           <li className="hover:bg-gray-100 cursor-pointer px-5 py-3">
             <Text weight={'medium'}>Next.js</Text>

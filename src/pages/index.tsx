@@ -160,10 +160,18 @@ const ForYouTabContent = () => {
 };
 
 const FollowingTabContent = () => {
+  const tweets = trpc.tweet.getFollowingTweets.useQuery();
+
+  if (!tweets.data) return <Loading />;
+
   return (
     <div className="py-3">
       <ul>
-        <li className="px-3">No content yet</li>
+        {tweets.data.length > 0 ? (
+          tweets.data.map((tweet) => <TweetBox key={tweet.id} tweet={tweet} />)
+        ) : (
+          <Text>No tweets from people you follow</Text>
+        )}
       </ul>
     </div>
   );

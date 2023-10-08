@@ -208,11 +208,15 @@ const RepliesSection = ({ username }: { username: string }) => {
 };
 
 const LikesSection = ({ username }: { username: string }) => {
-  // if (!tweets.data) return <Loading />;
+  const tweets = trpc.tweet.getLikedTweets.useQuery({ username });
+
+  if (!tweets.data) return <Loading />;
 
   return (
     <ul>
-      <Text>No tweet yet</Text>
+      {tweets.data.map((tweet) => (
+        <TweetBox key={tweet.tweet.id} tweet={tweet.tweet} />
+      ))}
     </ul>
   );
 };
