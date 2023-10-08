@@ -34,7 +34,6 @@ export default function SettingsPage() {
   const submit = async (data: ProfileForm) => {
     if (session && session.user.id) {
       await updateProfile.mutateAsync({
-        userId: session.user.id,
         profile: data,
       });
     }

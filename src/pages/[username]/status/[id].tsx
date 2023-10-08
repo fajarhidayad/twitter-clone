@@ -6,10 +6,12 @@ import { Avatar, Flex, Heading, Separator, Text } from '@radix-ui/themes';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { formatDateDetails } from '@/utils/formatDate';
+import { useSession } from 'next-auth/react';
 
 export default function TweetDetails() {
   const router = useRouter();
   const { id, username } = router.query;
+  const { data: session } = useSession();
   const tweet = trpc.tweet.findById.useQuery({
     id: parseInt(id as string),
   });
@@ -31,11 +33,15 @@ export default function TweetDetails() {
           mb={'3'}
           gap={'4'}
           align={'center'}
+          width={'max-content'}
+          className="cursor-pointer"
           onClick={() => router.push(`/${username}`)}
         >
           <Avatar fallback="U" src={tweet.data.author.image ?? ''} />
           <div>
-            <Heading size={'3'}>{tweet.data.author.name}</Heading>
+            <Heading size={'3'} className="hover:underline">
+              {tweet.data.author.name}
+            </Heading>
             <Text size={'2'} color="gray">
               @{tweet.data.author.username}
             </Text>
@@ -50,7 +56,12 @@ export default function TweetDetails() {
       </section>
 
       <Separator size={'4'} />
-      <Reaction />
+      <Reaction
+        likes={tweet.data._count.likes}
+        replies={tweet.data._count.replies}
+        tweetId={tweet.data.id}
+        likedByUser={session && tweet.data.likes[0] ? true : false}
+      />
       <Separator size={'4'} />
     </>
   );

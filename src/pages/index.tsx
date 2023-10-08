@@ -1,7 +1,5 @@
 import Loading from '@/components/Loading';
-import Reaction from '@/components/Reaction';
-import { AppRouter } from '@/server/routers/_app';
-import { formatDate } from '@/utils/formatDate';
+import TweetBox from '@/components/TweetBox';
 import { trpc } from '@/utils/trpc';
 import {
   Avatar,
@@ -12,15 +10,12 @@ import {
   Text,
   TextArea,
 } from '@radix-ui/themes';
-import { inferRouterOutputs } from '@trpc/server';
 import { Session } from 'next-auth';
 import { useSession } from 'next-auth/react';
 import Head from 'next/head';
-import { useRouter } from 'next/router';
 import { useState } from 'react';
 
 type Tab = 'for-you' | 'following';
-type Tweet = inferRouterOutputs<AppRouter>['tweet']['getAll'][0];
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('for-you');
@@ -40,12 +35,7 @@ export default function Home() {
         handleTabChange={handleTabChange}
         session={session}
       />
-      {session && (
-        <TweetInput
-          authorId={session.user?.id}
-          image={session.user?.image ?? ''}
-        />
-      )}
+      {session && <TweetInput image={session.user?.image ?? ''} />}
       <section>
         {activeTab === 'for-you' && <ForYouTabContent />}
         {activeTab === 'following' && <FollowingTabContent />}
@@ -107,13 +97,7 @@ const Nav = (props: {
   );
 };
 
-const TweetInput = ({
-  authorId,
-  image,
-}: {
-  authorId: string;
-  image: string;
-}) => {
+const TweetInput = ({ image }: { image: string }) => {
   const [text, setText] = useState('');
   const utils = trpc.useContext();
 
@@ -129,7 +113,7 @@ const TweetInput = ({
     if (text.length === 0) return;
 
     try {
-      await createTweet.mutateAsync({ text, authorId });
+      await createTweet.mutateAsync({ text });
     } catch (error) {
       console.error({ error }, 'Failed to add tweet');
     }
@@ -168,7 +152,7 @@ const ForYouTabContent = () => {
     <div className="py-3">
       <ul>
         {tweets.data.map((tweet) => (
-          <Tweet key={tweet.id} tweet={tweet} />
+          <TweetBox key={tweet.id} tweet={tweet} />
         ))}
       </ul>
     </div>
@@ -182,55 +166,5 @@ const FollowingTabContent = () => {
         <li className="px-3">No content yet</li>
       </ul>
     </div>
-  );
-};
-
-const Tweet = ({ tweet }: { tweet: Tweet }) => {
-  const router = useRouter();
-
-  const setLocalTweet = () => {
-    router.push(`/${tweet.author.username}/status/${tweet.id}`);
-  };
-
-  const handleClickProfile = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    router.push(`/${tweet.author.username}`);
-  };
-
-  return (
-    <li
-      key={tweet.id}
-      onClick={setLocalTweet}
-      className="px-3 pt-3 border-b hover:bg-gray-100 cursor-pointer"
-    >
-      <Flex>
-        <Avatar
-          fallback="U"
-          className="z-30"
-          src={tweet.author.image ?? ''}
-          onClick={handleClickProfile}
-        />
-        <div className="ml-3">
-          <div className="flex items-center gap-1">
-            <Text
-              weight={'bold'}
-              className="hover:underline"
-              onClick={handleClickProfile}
-            >
-              {tweet.author.name}
-            </Text>
-            <Text size={'2'} color="gray">
-              @{tweet.author.username}
-            </Text>
-            <Text className="text-gray-500">·</Text>
-            <Text className="text-gray-500 ml-2" size={'2'}>
-              {formatDate(tweet.createdAt)}
-            </Text>
-          </div>
-          <Text>{tweet.text}</Text>
-        </div>
-      </Flex>
-      <Reaction likes={tweet._count.likes} replies={tweet._count.replies} />
-    </li>
   );
 };
