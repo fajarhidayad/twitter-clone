@@ -9,10 +9,14 @@ import {
   Separator,
   TextField,
   Tabs,
+  TextArea,
 } from '@radix-ui/themes';
 import Link from 'next/link';
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { FcGoogle } from 'react-icons/fc';
+import { FaTimes } from 'react-icons/fa';
+import { useEffect, useState } from 'react';
+import { trpc } from '@/utils/trpc';
 
 export default function SidebarMenu() {
   const { data: session, status } = useSession();
@@ -49,15 +53,18 @@ export default function SidebarMenu() {
           )}
           {status === 'unauthenticated' && <DialogForm />}
           {status === 'authenticated' && (
-            <Button
-              variant="ghost"
-              color="red"
-              size={'3'}
-              ml={'4'}
-              onClick={() => signOut()}
-            >
-              Sign Out
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                color="red"
+                size={'3'}
+                ml={'4'}
+                onClick={() => signOut()}
+              >
+                Sign Out
+              </Button>
+              <DialogTweet />
+            </>
           )}
 
           {status === 'authenticated' && (
@@ -198,5 +205,80 @@ const SignUpForm = () => {
         </Flex>
       </form>
     </Flex>
+  );
+};
+
+const DialogTweet = () => {
+  const [text, setText] = useState('');
+  const [error, setError] = useState('');
+  const { data: session } = useSession();
+
+  const utils = trpc.useContext();
+  const tweetMut = trpc.tweet.create.useMutation({
+    onSuccess: () => {
+      utils.tweet.getAll.invalidate();
+    },
+  });
+
+  const onSubmit = () => {
+    if (text.length > 0 && text.length <= 255) {
+      tweetMut.mutate({ text });
+    }
+  };
+
+  useEffect(() => {
+    if (text.length > 255) {
+      setError('Text must between 0 and 255 characters');
+    } else {
+      setError('');
+    }
+  }, [text]);
+
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger>
+        <div className="w-full px-4">
+          <Button size={'3'} className="w-full">
+            Post
+          </Button>
+        </div>
+      </Dialog.Trigger>
+      <Dialog.Content>
+        <Dialog.Close>
+          <button>
+            <FaTimes />
+          </button>
+        </Dialog.Close>
+        <Flex my={'3'} gap={'3'} className="max-w-[480px]">
+          <Avatar fallback="U" src={session?.user.image ?? ''} />
+          <TextArea
+            placeholder="What's on your mind?"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            size={'3'}
+            rows={Math.ceil(text.length / 10)}
+            className="w-[200px] h-fit"
+          />
+        </Flex>
+        <Separator size={'4'} />
+        <Flex justify={'end'} gap={'3'} align={'center'} mt={'3'}>
+          <Text size={'2'} color="red" mr={'auto'}>
+            {error}
+          </Text>
+          <div className="rounded-full w-10 h-10 border-2 border-blue-500 flex justify-center items-center">
+            <Text size={'2'} color="blue">
+              {255 - text.length}
+            </Text>
+          </div>
+          <Button
+            size={'2'}
+            onClick={onSubmit}
+            disabled={text.length < 1 || text.length > 255}
+          >
+            Tweet
+          </Button>
+        </Flex>
+      </Dialog.Content>
+    </Dialog.Root>
   );
 };

@@ -6,11 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import Loading from '@/components/Loading';
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const RootLayout = ({ children }: { children: React.ReactNode }) => {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -27,7 +23,9 @@ export default function RootLayout({
       <TrendMenu />
     </Flex>
   );
-}
+};
+
+export default RootLayout;
 
 const TrendMenu = () => {
   return (

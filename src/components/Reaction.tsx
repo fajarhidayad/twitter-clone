@@ -15,7 +15,7 @@ interface ReactionProps {
   replies: number;
   retweet: number;
   tweetId: number;
-  likedByUser: boolean;
+  likedByUser?: boolean;
   retweetedByUser?: boolean;
 }
 

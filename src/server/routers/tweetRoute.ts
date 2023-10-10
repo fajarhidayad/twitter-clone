@@ -39,6 +39,7 @@ const includeTweetProp = (
       },
     },
   },
+  retweets: likes,
   _count: {
     select: {
       likes: true,

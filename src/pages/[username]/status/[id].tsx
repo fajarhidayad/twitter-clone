@@ -66,28 +66,63 @@ export default function TweetDetails() {
       </section>
 
       <Separator size={'4'} />
-      <Reaction
-        likes={
-          tweet.data.retweetFrom
-            ? tweet.data.retweetFrom._count.likes
-            : tweet.data._count.likes
-        }
-        replies={
-          tweet.data.retweetFrom
-            ? tweet.data.retweetFrom._count.replies
-            : tweet.data._count.replies
-        }
-        tweetId={tweet.data.id}
-        likedByUser={session && tweet.data.likes[0] ? true : false}
-        retweet={
-          tweet.data.retweetFrom
-            ? tweet.data.retweetFrom._count.retweets
-            : tweet.data._count.retweets
-        }
-        retweetedByUser={
-          tweet.data.authorId === session?.user.id ? true : false
-        }
-      />
+
+      {tweet.data.retweetFromId && (
+        <Reaction
+          likes={
+            tweet.data.retweetFrom
+              ? tweet.data.retweetFrom._count.likes
+              : tweet.data._count.likes
+          }
+          replies={
+            tweet.data.retweetFrom
+              ? tweet.data.retweetFrom._count.replies
+              : tweet.data._count.replies
+          }
+          tweetId={tweet.data.id}
+          retweet={
+            tweet.data.retweetFrom
+              ? tweet.data.retweetFrom._count.retweets
+              : tweet.data._count.retweets
+          }
+          likedByUser={
+            session && tweet.data.retweetFrom?.likes[0].authorId ? true : false
+          }
+          retweetedByUser={
+            tweet.data.retweetFrom &&
+            tweet.data.retweetFrom.retweets.length > 0 &&
+            tweet.data.retweetFrom.retweets[0].authorId === session?.user.id
+              ? true
+              : false
+          }
+        />
+      )}
+      {!tweet.data.retweetFromId && (
+        <Reaction
+          likes={
+            tweet.data.retweetFrom
+              ? tweet.data.retweetFrom._count.likes
+              : tweet.data._count.likes
+          }
+          replies={
+            tweet.data.retweetFrom
+              ? tweet.data.retweetFrom._count.replies
+              : tweet.data._count.replies
+          }
+          tweetId={tweet.data.id}
+          retweet={
+            tweet.data.retweetFrom
+              ? tweet.data.retweetFrom._count.retweets
+              : tweet.data._count.retweets
+          }
+          likedByUser={session && tweet.data.likes[0] ? true : false}
+          retweetedByUser={
+            tweet.data.retweets.length > 0 &&
+            tweet.data.retweets[0].authorId === session?.user.id
+          }
+        />
+      )}
+
       <Separator size={'4'} />
     </>
   );

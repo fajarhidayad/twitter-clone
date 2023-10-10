@@ -16,7 +16,7 @@ const TweetBox = ({
   retweetUser,
   retweetUserId,
 }: {
-  tweet: Tweet | Retweet;
+  tweet: Tweet;
   retweetUser?: {
     name: string | null;
     username: string | null;
@@ -82,14 +82,61 @@ const TweetBox = ({
           <Text>{tweet!.text}</Text>
         </div>
       </Flex>
-      <Reaction
-        likes={tweet?._count.likes ?? 0}
-        replies={tweet?._count.replies ?? 0}
-        retweet={tweet?._count.retweets ?? 0}
-        tweetId={tweet!.id}
-        likedByUser={session && tweet?.likes[0] ? true : false}
-        retweetedByUser={retweetUserId === session?.user.id}
-      />
+      {tweet?.retweetFromId && (
+        <Reaction
+          likes={
+            tweet?.retweetFrom
+              ? tweet?.retweetFrom._count.likes
+              : tweet?._count.likes
+          }
+          replies={
+            tweet?.retweetFrom
+              ? tweet?.retweetFrom._count.replies
+              : tweet?._count.replies
+          }
+          tweetId={tweet?.id}
+          retweet={
+            tweet?.retweetFrom
+              ? tweet?.retweetFrom._count.retweets
+              : tweet?._count.retweets
+          }
+          likedByUser={
+            session && tweet?.retweetFrom?.likes[0].authorId ? true : false
+          }
+          retweetedByUser={
+            tweet?.retweetFrom &&
+            tweet?.retweetFrom.retweets.length > 0 &&
+            tweet?.retweetFrom.retweets[0].authorId === session?.user.id
+              ? true
+              : false
+          }
+        />
+      )}
+      {!tweet?.retweetFromId && (
+        <Reaction
+          likes={
+            tweet?.retweetFrom
+              ? tweet?.retweetFrom._count.likes
+              : tweet?._count.likes
+          }
+          replies={
+            tweet?.retweetFrom
+              ? tweet?.retweetFrom._count.replies
+              : tweet?._count.replies
+          }
+          tweetId={tweet?.id}
+          retweet={
+            tweet?.retweetFrom
+              ? tweet?.retweetFrom._count.retweets
+              : tweet?._count.retweets
+          }
+          likedByUser={session && tweet?.likes[0] ? true : false}
+          retweetedByUser={
+            tweet?.retweets.length > 0 &&
+            tweet?.retweets[0].authorId === session?.user.id
+          }
+        />
+      )}
     </li>
   );
 };

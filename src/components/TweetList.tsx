@@ -9,14 +9,14 @@ const TweetList = ({ tweets }: { tweets: Tweet[] | undefined }) => {
   if (!tweets) return <Loading />;
 
   return (
-    <div className="py-3">
+    <div>
       <ul>
         {tweets.map((tweet) => {
           if (tweet.retweetFromId) {
             return (
               <TweetBox
                 key={tweet.id}
-                tweet={tweet.retweetFrom}
+                tweet={tweet}
                 retweetUser={{
                   name: tweet.author.name,
                   username: tweet.author.username,
