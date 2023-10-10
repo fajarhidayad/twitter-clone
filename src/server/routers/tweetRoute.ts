@@ -2,6 +2,52 @@ import { TRPCError } from '@trpc/server';
 import { router, procedure, isAuthed } from '../trpc';
 import { z } from 'zod';
 
+const includeTweetProp = (
+  likes:
+    | false
+    | {
+        where: {
+          authorId: string;
+        };
+      }
+) => ({
+  author: {
+    select: {
+      name: true,
+      image: true,
+      username: true,
+    },
+  },
+  likes,
+  retweetFrom: {
+    include: {
+      likes,
+      retweets: likes,
+      author: {
+        select: {
+          name: true,
+          image: true,
+          username: true,
+        },
+      },
+      _count: {
+        select: {
+          likes: true,
+          replies: true,
+          retweets: true,
+        },
+      },
+    },
+  },
+  _count: {
+    select: {
+      likes: true,
+      replies: true,
+      retweets: true,
+    },
+  },
+});
+
 export const tweetRouter = router({
   getAll: procedure.query(async ({ ctx }) => {
     const likes = ctx.session?.user.id
@@ -14,20 +60,7 @@ export const tweetRouter = router({
     const tweets = await ctx.prisma.tweet.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
-        author: {
-          select: {
-            name: true,
-            image: true,
-            username: true,
-          },
-        },
-        likes,
-        _count: {
-          select: {
-            likes: true,
-            replies: true,
-          },
-        },
+        ...includeTweetProp(likes),
       },
     });
 
@@ -52,22 +85,7 @@ export const tweetRouter = router({
       const tweets = await ctx.prisma.tweet.findMany({
         orderBy: { createdAt: 'desc' },
         where: { authorId: user.id },
-        include: {
-          author: {
-            select: {
-              name: true,
-              image: true,
-              username: true,
-            },
-          },
-          likes,
-          _count: {
-            select: {
-              likes: true,
-              replies: true,
-            },
-          },
-        },
+        include: includeTweetProp(likes),
       });
 
       return tweets;
@@ -95,22 +113,7 @@ export const tweetRouter = router({
         where: { authorId: user.id },
         select: {
           tweet: {
-            include: {
-              author: {
-                select: {
-                  name: true,
-                  image: true,
-                  username: true,
-                },
-              },
-              likes,
-              _count: {
-                select: {
-                  likes: true,
-                  replies: true,
-                },
-              },
-            },
+            include: includeTweetProp(likes),
           },
         },
       });
@@ -139,22 +142,7 @@ export const tweetRouter = router({
           in: following.map((follow) => follow.followerId),
         },
       },
-      include: {
-        author: {
-          select: {
-            name: true,
-            image: true,
-            username: true,
-          },
-        },
-        likes,
-        _count: {
-          select: {
-            likes: true,
-            replies: true,
-          },
-        },
-      },
+      include: includeTweetProp(likes),
     });
     return tweets;
   }),
@@ -184,22 +172,7 @@ export const tweetRouter = router({
         : false;
       const tweet = await ctx.prisma.tweet.findUnique({
         where: { id: input.id },
-        include: {
-          author: {
-            select: {
-              name: true,
-              image: true,
-              username: true,
-            },
-          },
-          likes,
-          _count: {
-            select: {
-              likes: true,
-              replies: true,
-            },
-          },
-        },
+        include: includeTweetProp(likes),
       });
 
       return tweet;
@@ -236,5 +209,44 @@ export const tweetRouter = router({
       return {
         success: true,
       };
+    }),
+  retweet: procedure
+    .use(isAuthed)
+    .input(
+      z.object({ tweetId: z.number(), text: z.string().max(255).nullish() })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const tweetId = input.tweetId;
+
+      const retweet = await ctx.prisma.tweet.findFirst({
+        where: {
+          retweetFromId: tweetId,
+          authorId: userId,
+        },
+      });
+
+      if (retweet) {
+        await ctx.prisma.tweet.delete({
+          where: {
+            id: retweet.id,
+          },
+        });
+
+        return {
+          status: 'success',
+        };
+      } else {
+        await ctx.prisma.tweet.create({
+          data: {
+            authorId: userId,
+            retweetFromId: tweetId,
+            text: input.text,
+          },
+        });
+        return {
+          status: 'success',
+        };
+      }
     }),
 });

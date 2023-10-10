@@ -11,6 +11,7 @@ import React, { useState } from 'react';
 import clsx from 'clsx';
 import Loading from '@/components/Loading';
 import TweetBox from '@/components/TweetBox';
+import TweetList from '@/components/TweetList';
 
 type User = inferRouterOutputs<AppRouter>['auth']['getUserByUsername'];
 type ProfileTab = 'Posts' | 'Replies' | 'Likes';
@@ -186,15 +187,7 @@ const TabButton = ({ setTab, tab, selectedTab }: TabButtonProps) => {
 const PostsSection = ({ username }: { username: string }) => {
   const tweets = trpc.tweet.getTweetByAuthor.useQuery({ username });
 
-  if (!tweets.data) return <Loading />;
-
-  return (
-    <ul>
-      {tweets.data.map((tweet) => (
-        <TweetBox key={tweet.id} tweet={tweet} />
-      ))}
-    </ul>
-  );
+  return <TweetList tweets={tweets.data} />;
 };
 
 const RepliesSection = ({ username }: { username: string }) => {

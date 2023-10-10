@@ -80,15 +80,20 @@ model Tweet {
   id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  text      String
+  text      String?
 
   authorId String
   author   User   @relation(fields: [authorId], references: [id])
 
-  likes    Like[]
-  sourceId Int?
-  source   Tweet?  @relation("TweetToTweet", fields: [sourceId], references: [id])
-  replies  Tweet[] @relation("TweetToTweet")
+  retweetFrom   Tweet?  @relation("Retweets", fields: [retweetFromId], references: [id])
+  retweetFromId Int?
+  retweets      Tweet[] @relation("Retweets")
+
+  sourceTweet   Tweet?  @relation("Replies", fields: [sourceTweetId], references: [id])
+  sourceTweetId Int?
+  replies       Tweet[] @relation("Replies")
+
+  likes Like[]
 }
 
 model Like {

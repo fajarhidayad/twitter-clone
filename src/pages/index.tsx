@@ -1,5 +1,4 @@
-import Loading from '@/components/Loading';
-import TweetBox from '@/components/TweetBox';
+import TweetList from '@/components/TweetList';
 import { trpc } from '@/utils/trpc';
 import {
   Avatar,
@@ -10,7 +9,7 @@ import {
   Text,
   TextArea,
 } from '@radix-ui/themes';
-import { Session } from 'next-auth';
+import type { Session } from 'next-auth';
 import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import { useState } from 'react';
@@ -20,6 +19,8 @@ type Tab = 'for-you' | 'following';
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('for-you');
   const { data: session } = useSession();
+  const forYouTweets = trpc.tweet.getAll.useQuery();
+  const followingTweets = trpc.tweet.getFollowingTweets.useQuery();
 
   function handleTabChange(tab: Tab) {
     setActiveTab(tab);
@@ -37,8 +38,10 @@ export default function Home() {
       />
       {session && <TweetInput image={session.user?.image ?? ''} />}
       <section>
-        {activeTab === 'for-you' && <ForYouTabContent />}
-        {activeTab === 'following' && <FollowingTabContent />}
+        {activeTab === 'for-you' && <TweetList tweets={forYouTweets.data} />}
+        {activeTab === 'following' && (
+          <TweetList tweets={followingTweets.data} />
+        )}
       </section>
     </>
   );
@@ -139,40 +142,6 @@ const TweetInput = ({ image }: { image: string }) => {
           </Button>
         </Flex>
       </form>
-    </div>
-  );
-};
-
-const ForYouTabContent = () => {
-  const tweets = trpc.tweet.getAll.useQuery();
-
-  if (!tweets.data) return <Loading />;
-
-  return (
-    <div className="py-3">
-      <ul>
-        {tweets.data.map((tweet) => (
-          <TweetBox key={tweet.id} tweet={tweet} />
-        ))}
-      </ul>
-    </div>
-  );
-};
-
-const FollowingTabContent = () => {
-  const tweets = trpc.tweet.getFollowingTweets.useQuery();
-
-  if (!tweets.data) return <Loading />;
-
-  return (
-    <div className="py-3">
-      <ul>
-        {tweets.data.length > 0 ? (
-          tweets.data.map((tweet) => <TweetBox key={tweet.id} tweet={tweet} />)
-        ) : (
-          <Text>No tweets from people you follow</Text>
-        )}
-      </ul>
     </div>
   );
 };
