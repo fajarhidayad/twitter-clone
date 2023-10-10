@@ -21,8 +21,6 @@ export default function TweetDetails() {
     return <Loading />;
   }
 
-  console.log(tweet.data);
-
   const directToProfile = () => {
     router.push(`/${username}`);
   };
@@ -42,7 +40,7 @@ export default function TweetDetails() {
             <Text color="gray" size={'2'} weight={'medium'}>
               {tweet.data.authorId === session?.user.id
                 ? 'You '
-                : tweet.data.author.name}
+                : tweet.data.author.name}{' '}
               retweeted
             </Text>
           </Flex>
@@ -69,13 +67,25 @@ export default function TweetDetails() {
 
       <Separator size={'4'} />
       <Reaction
-        likes={tweet.data._count.likes}
-        replies={tweet.data._count.replies}
+        likes={
+          tweet.data.retweetFrom
+            ? tweet.data.retweetFrom._count.likes
+            : tweet.data._count.likes
+        }
+        replies={
+          tweet.data.retweetFrom
+            ? tweet.data.retweetFrom._count.replies
+            : tweet.data._count.replies
+        }
         tweetId={tweet.data.id}
         likedByUser={session && tweet.data.likes[0] ? true : false}
-        retweet={tweet.data._count.retweets}
+        retweet={
+          tweet.data.retweetFrom
+            ? tweet.data.retweetFrom._count.retweets
+            : tweet.data._count.retweets
+        }
         retweetedByUser={
-          tweet.data.retweetFrom?.authorId === session?.user.id ? true : false
+          tweet.data.authorId === session?.user.id ? true : false
         }
       />
       <Separator size={'4'} />

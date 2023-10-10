@@ -22,11 +22,17 @@ const TweetList = ({ tweets }: { tweets: Tweet[] | undefined }) => {
                   username: tweet.author.username,
                   tweetId: tweet.id,
                 }}
-                retweetUserId={tweet.retweetFrom?.retweets[0]?.authorId}
+                retweetUserId={tweet.authorId}
               />
             );
           } else {
-            return <TweetBox key={tweet.id} tweet={tweet} />;
+            return (
+              <TweetBox
+                key={tweet.id}
+                tweet={tweet}
+                retweetUserId={tweet.authorId}
+              />
+            );
           }
         })}
       </ul>
